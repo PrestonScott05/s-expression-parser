@@ -14,7 +14,7 @@ There are no external dependencies.
 
 ## Usage
 
-The program reads all of the standard input, so the most reliable way to run it is to pipe inpur in or redirect a file, which lets the input end on it's own. 
+The program reads all of the standard input, so the most reliable way to run it is to pipe input in or redirect a file, which ends the input automatically and continues the rest of the program.
 
 ```
 echo '(1 2 3)' | ./parser
