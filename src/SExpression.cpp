@@ -93,7 +93,7 @@ void Reader::skipWhitespace() {
     while (!atEnd()) {
         char current = peek();
 
-        if (isspace(static_cast<unsigned char>(current))) {
+        if (isspace(static_cast<unsigned char>(current)) || current == ',') {
             advance();
         } else {
             break;
@@ -131,7 +131,7 @@ shared_ptr<SExpression> Reader::readAtom() {
 
     while (!atEnd()) {
         char c = peek();
-        if (c == ' ' || c == '\n' || c == '\t' || c == '\r' ||  c == '(' || c == ')') {
+        if (c == ' ' || c == '\n' || c == '\t' || c == '\r' ||  c == '(' || c == ')' || c == ',') {
             break;
         }
         result += advance();
