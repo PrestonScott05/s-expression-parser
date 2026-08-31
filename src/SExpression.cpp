@@ -6,6 +6,8 @@
 #include <stdexcept>
 #include <sstream>
 
+using namespace std;
+
 enum class ExpressionType {
     Nil,
     Atom, 
@@ -14,24 +16,24 @@ enum class ExpressionType {
 
 struct SExpression {
     ExpressionType type;
-    std::string atomValue;
+    string atomValue;
 
-    std::shared_ptr<SExpression> car;
-    std::shared_ptr<SExpression> cdr;
+    shared_ptr<SExpression> car;
+    shared_ptr<SExpression> cdr;
 };
 
-std::shared_ptr<SExpression> makeAtom(std::string value) {
-    std::shared_ptr<SExpression> node = std::make_shared<SExpression>();
+shared_ptr<SExpression> makeAtom(string value) {
+    shared_ptr<SExpression> node = make_shared<SExpression>();
     node -> type = ExpressionType::Atom;
-    node -> atomValue = std::move(value);
+    node -> atomValue = move(value);
     node -> car = nullptr;
     node -> cdr = nullptr;
 
     return node;
 }
 
-std::shared_ptr<SExpression> makeNil() {
-    std::shared_ptr<SExpression> node = std::make_shared<SExpression>();
+shared_ptr<SExpression> makeNil() {
+    shared_ptr<SExpression> node = make_shared<SExpression>();
     node->type = ExpressionType::Nil;
     node-> car = nullptr;
     node->cdr = nullptr;
@@ -39,8 +41,8 @@ std::shared_ptr<SExpression> makeNil() {
     return node;
 }
 
-std::shared_ptr<SExpression> makePair(std::shared_ptr<SExpression> myCar, std::shared_ptr<SExpression> myCdr) {
-    std::shared_ptr<SExpression> node = std::make_shared<SExpression>();
+shared_ptr<SExpression> makePair(shared_ptr<SExpression> myCar, shared_ptr<SExpression> myCdr) {
+    shared_ptr<SExpression> node = make_shared<SExpression>();
     node->type = ExpressionType::Pair;
     node->car = myCar;
     node-> cdr = myCdr;
@@ -50,17 +52,17 @@ std::shared_ptr<SExpression> makePair(std::shared_ptr<SExpression> myCar, std::s
 
 class Reader {
     public:
-        explicit Reader(std::string str) : sourceString(std::move(str)), pos(0) {}
+        explicit Reader(string str) : sourceString(move(str)), pos(0) {}
 
-        std::shared_ptr<SExpression> read();
+        shared_ptr<SExpression> read();
         bool hasMoreStuff();
     private:
-        std::string sourceString;
+        string sourceString;
         size_t pos = 0;
 
         void skipWhitespace();
-        std::shared_ptr<SExpression> readList();
-        std::shared_ptr<SExpression> readAtom();
+        shared_ptr<SExpression> readList();
+        shared_ptr<SExpression> readAtom();
 
         char peek() {
             if (atEnd()) {
@@ -91,10 +93,10 @@ void Reader::skipWhitespace() {
     while (!atEnd()) {
         char current = peek();
 
-        if (!std::isspace(static_cast<unsigned char>(current))) {
-            break;
-        } else {
+        if (isspace(static_cast<unsigned char>(current))) {
             advance();
+        } else {
+            break;
         }
     }
 }
@@ -104,14 +106,18 @@ bool Reader::hasMoreStuff() {
     return !atEnd();
 }
 
-std::shared_ptr<SExpression> Reader::read() {
+shared_ptr<SExpression> Reader::read() {
     skipWhitespace();
     
     if (atEnd()) {
-        throw std::runtime_error("we hit the end of the input unexpectedly");
+        throw runtime_error("we hit the end of the input unexpectedly");
     }
 
     char curr = peek();
+
+    if (curr == ')') {
+        throw runtime_error("unexpected ')' with no matching '('");
+    }
 
     if (curr == '(') {
         return readList();
@@ -120,8 +126,8 @@ std::shared_ptr<SExpression> Reader::read() {
     }
 }
 
-std::shared_ptr<SExpression> Reader::readAtom() {
-    std::string result = "";
+shared_ptr<SExpression> Reader::readAtom() {
+    string result = "";
 
     while (!atEnd()) {
         char c = peek();
@@ -134,18 +140,18 @@ std::shared_ptr<SExpression> Reader::readAtom() {
     return makeAtom(result);
 }
 
-std::shared_ptr<SExpression> Reader::readList() {
+shared_ptr<SExpression> Reader::readList() {
     //eat openening parentheses
     advance();
 
-    std::vector<std::shared_ptr<SExpression>> elements;
+    vector<shared_ptr<SExpression>> elements;
 
 
     while (true) {
         skipWhitespace();
 
         if (atEnd()) {
-            throw std::runtime_error("you didn't terminate the list. Missing: ')'");
+            throw runtime_error("you didn't terminate the list. Missing: ')'");
         }
 
         if (peek() == ')') {
@@ -156,7 +162,7 @@ std::shared_ptr<SExpression> Reader::readList() {
         elements.push_back(read());
     }
 
-    std::shared_ptr<SExpression> list = makeNil();
+    shared_ptr<SExpression> list = makeNil();
 
     for (auto iterator = elements.rbegin(); iterator != elements.rend(); iterator++) {
         list = makePair(*iterator, list);
@@ -165,46 +171,72 @@ std::shared_ptr<SExpression> Reader::readList() {
     return list;
 }
 
-void print(const std::shared_ptr<SExpression> &expr) {
+void print(const shared_ptr<SExpression> &expr) {
     if (expr->type == ExpressionType::Atom) {
-        std::cout << expr->atomValue;
+        cout << expr->atomValue;
     }
     else if (expr->type == ExpressionType::Nil) {
-        std::cout << "()";
+        cout << "()";
     }
     else {
-        std::cout << "(";
+        cout << "(";
 
-        std::shared_ptr<SExpression> cur = expr;
+        shared_ptr<SExpression> cur = expr;
 
         bool first = true;
         while (cur->type == ExpressionType::Pair) {
             if (!first) {
-                std::cout << " ";
+                cout << " ";
             }
             print(cur -> car);
             cur = cur->cdr;
             first = false;
         }
-        std::cout << ")"; 
+        cout << ")"; 
+    }
+}
+
+static void processChunk(const string &src) {
+    Reader parser(src);
+    try {
+        while (parser.hasMoreStuff()) {
+            print(parser.read());
+            cout << "\n";
+        }
+    } catch (const exception &ex) {
+        cerr << "there was an error: " << ex.what() << endl;
     }
 }
 
 int main() {
-    std::stringstream buffer;
-    buffer << std::cin.rdbuf();
+    string pendingExpression;
+    int currentDepth = 0;
+    string line;
 
-    Reader parser(buffer.str());
+    while (getline(cin, line)) {
+        pendingExpression += line;
+        pendingExpression += '\n';
 
-    try {
-        while (parser.hasMoreStuff()) {
-            print(parser.read());
-            std::cout << "\n";
+        for (char c : line) {
+            if (c == '(') {
+                currentDepth++;
+            } else if (c == ')') {
+
+                currentDepth--;
+            }
         }
-    } catch (const std::exception &ex) {
-        std::cerr << "there was an error: " << ex.what() << "\n";
-        return 1;
+
+        if (currentDepth <= 0) {
+            processChunk(pendingExpression);
+            pendingExpression.clear();
+            currentDepth = 0;
+        }
     }
+
+    if (!pendingExpression.empty()) {
+        processChunk(pendingExpression);
+    }
+
     return 0;
 }
 
