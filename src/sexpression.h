@@ -208,7 +208,7 @@ class Reader {
         }
 };
 
-inline string toString(const shared_ptr<SExpression> &expr) {
+inline string exprToString(const shared_ptr<SExpression> &expr) {
     if (isAtom(expr)) return expr->atomValue;
     if (isNil(expr)) return "()";
 
@@ -221,20 +221,20 @@ inline string toString(const shared_ptr<SExpression> &expr) {
             out += " ";
         }
 
-        out += toString(cur->car);
+        out += exprToString(cur->car);
         cur = cur->cdr;
         first = false;
     }
 
     if (!isNil(cur)) {
-        out += " . " + toString(cur);
+        out += " . " + exprToString(cur);
     }
 
     return out + ")";
 }
 
 inline void print(const shared_ptr<SExpression> &expr) {
-    cout << toString(expr);
+    cout << exprToString(expr);
 }
 
 inline Operator toOp(const string &s) {
